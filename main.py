@@ -6,70 +6,102 @@ from wall import *
 from gem import *
 from gameObject import *
 
+MENU = "menu"
+GAME = "game"
+END = "end"
 
-# 1. NASTAVENÍ SYSTÉMU (Vždycky první)
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Dungeon game")
+pygame.display.set_caption("Dungeon Game") # Moje oblíbené jméno :)
 clock = pygame.time.Clock()
 
-# 2. NAČTENÍ DAT (Až když běží pygame)
-# Ujisti se, že se soubor jmenuje přesně background.jpg a je ve složce assets
-bg_image = pygame.image.load("assets/background.jpg").convert()
+# --- NAČTENÍ POZADÍ ---
+bg_image = pygame.image.load("assets/ground.png").convert()
 bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
 
-walls = pygame.sprite.Group()
-for i in range(8):
-    new_wall = Wall()
-    walls.add(new_wall)
+# --- FUNKCE PRO OBRAZOVKY ---
+def draw_menu(screen):
+    screen.fill((30, 30, 30))
+    font = pygame.font.SysFont("Arial", 64)
+    text = font.render("Dungeon Game", True, (255, 215, 0))
+    screen.blit(text, (WIDTH//2 - text.get_width()//2, 200))
+    
+    font_small = pygame.font.SysFont("Arial", 32)
+    start_text = font_small.render("Press space to start", True, (255, 255, 255))
+    screen.blit(start_text, (WIDTH//2 - start_text.get_width()//2, 400))
 
+def draw_end_screen(screen):
+    screen.fill((0, 0, 0))
+    font = pygame.font.SysFont("Arial", 64)
+    text = font.render("Game over", True, (255, 0, 0))
+    screen.blit(text, (WIDTH//2 - text.get_width()//2, 250))
+    
+    font_small = pygame.font.SysFont("Arial", 24)
+    restart_text = font_small.render("Press R to restart", True, (200, 200, 200))
+    screen.blit(restart_text, (WIDTH//2 - restart_text.get_width()//2, 400))
+
+#Gems
 def create_gems(number_of_gems, walls_group):
     gems = pygame.sprite.Group()
-    
     while len(gems) < number_of_gems:
         x = random.randint(0, WIDTH - 30)
         y = random.randint(0, HEIGHT - 30)
-        
-        new_gem = Gem(x, y)
-        gems.add(new_gem)
-        
+        new_gem = Gem(x, y) # Musíš mít třídu Gem
         if not pygame.sprite.spritecollideany(new_gem, walls_group):
             gems.add(new_gem)
-            
     return gems
 
-# Vytvoření hráče (souřadnice x, y, šířka, výška, rychlost)
-player = Player(400, 300, 50, 50, 5)
-gems = create_gems(5, walls)
+#Objects
+def reset_game():
+    walls = pygame.sprite.Group()
+    for i in range(8):
+        new_wall = Wall()
+        walls.add(new_wall)
+    
+    player = Player(400, 300, 50, 50, 5)
+    gems = create_gems(5, walls)
+    return player, walls, gems
 
-# 3. HLAVNÍ SMYČKA
+#Initialize
+player, walls, gems = reset_game()
+game_state = MENU
 running = True
+
+#Game loop
 while running:
-    # --- 2. ZPRACOVÁNÍ UDÁLOSTÍ ---
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        
+        if event.type == pygame.KEYDOWN:
+            if game_state == MENU and event.key == pygame.K_SPACE:
+                game_state = GAME
+            if game_state == END and event.key == pygame.K_r:
+                player, walls, gems = reset_game() # Všechno vygenerujeme znova
+                game_state = MENU
 
-    # --- 3. LOGIKA ---
-    player.move(walls)
-    collected_gems = pygame.sprite.spritecollide(player, gems, True)
+    if game_state == MENU:
+        draw_menu(screen)
     
-    for gem in collected_gems:
-        print("gem collected!")
+    elif game_state == GAME:
+        player.move(walls)
+        
+        collected_gems = pygame.sprite.spritecollide(player, gems, True)
+        for gem in collected_gems:
+            print("Gem collected!")
+        
+        if len(gems) == 0:
+            game_state = END
+            
+        screen.blit(bg_image, (0, 0))
+        walls.draw(screen)
+        gems.draw(screen) 
+        screen.blit(player.image, player.rect)
 
-    # --- 4. VYKRESLOVÁNÍ ---
-    # Nejdřív pozadí, pak hráč
-    screen.blit(bg_image, (0, 0))
-    walls.draw(screen)
-    screen.blit(bg_image, (0, 0))
-    walls.draw(screen)
-    gems.draw(screen) 
-    screen.blit(player.image, player.rect)
-    screen.blit(player.image, player.rect)
+    elif game_state == END:
+        draw_end_screen(screen)
 
     pygame.display.flip()
-    
-    # --- 5. ČASOVÁNÍ ---
     clock.tick(FPS)
 
 pygame.quit()
