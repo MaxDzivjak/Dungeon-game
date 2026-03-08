@@ -1,5 +1,6 @@
 import pygame
 import sys
+import random
 from settings import *
 from player import *
 from wall import *
@@ -12,14 +13,14 @@ END = "end"
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Dungeon Game") # Moje oblíbené jméno :)
+pygame.display.set_caption("Dungeon Game")
 clock = pygame.time.Clock()
 
-# --- NAČTENÍ POZADÍ ---
+#background
 bg_image = pygame.image.load("assets/ground.png").convert()
 bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
 
-# --- FUNKCE PRO OBRAZOVKY ---
+#screen
 def draw_menu(screen):
     screen.fill((30, 30, 30))
     font = pygame.font.SysFont("Arial", 64)
@@ -46,7 +47,7 @@ def create_gems(number_of_gems, walls_group):
     while len(gems) < number_of_gems:
         x = random.randint(0, WIDTH - 30)
         y = random.randint(0, HEIGHT - 30)
-        new_gem = Gem(x, y) # Musíš mít třídu Gem
+        new_gem = Gem(x, y)
         if not pygame.sprite.spritecollideany(new_gem, walls_group):
             gems.add(new_gem)
     return gems
@@ -54,12 +55,24 @@ def create_gems(number_of_gems, walls_group):
 #Objects
 def reset_game():
     walls = pygame.sprite.Group()
-    for i in range(8):
-        new_wall = Wall()
-        walls.add(new_wall)
+    number_of_walls = 8
     
-    player = Player(400, 300, 50, 50, 5)
+    while len(walls) < number_of_walls:
+        w = random.randint(40, 150)
+        h = random.randint(40, 150)
+        
+        x = random.randint(0, WIDTH - w)
+        y = random.randint(0, HEIGHT - h)
+        
+        new_wall = Wall(x, y, w, h, "assets/wall.png")
+        
+        player_start_rect = pygame.Rect(350, 250, 100, 100)
+        
+        if not new_wall.rect.colliderect(player_start_rect):
+            walls.add(new_wall)
+    
     gems = create_gems(5, walls)
+    player = Player(400, 300, 50, 50, 5)
     return player, walls, gems
 
 #Initialize
