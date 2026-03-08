@@ -10,6 +10,8 @@ from gameObject import *
 MENU = "menu"
 GAME = "game"
 END = "end"
+GAME_TIME = 45
+start_ticks = 0
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -20,14 +22,18 @@ clock = pygame.time.Clock()
 bg_image = pygame.image.load("assets/ground.png").convert()
 bg_image = pygame.transform.scale(bg_image, (WIDTH, HEIGHT))
 
+fog = pygame.Surface((WIDTH, HEIGHT))
+fog.fill((0, 0, 0))
+fog.set_alpha(220)
+
 #screen
 def draw_menu(screen):
     screen.fill((30, 30, 30))
-    font = pygame.font.SysFont("Arial", 64)
+    font = pygame.font.SysFont("Nexa", 64)
     text = font.render("Dungeon Game", True, (255, 215, 0))
     screen.blit(text, (WIDTH//2 - text.get_width()//2, 200))
     
-    font_small = pygame.font.SysFont("Arial", 32)
+    font_small = pygame.font.SysFont("Nexa", 32)
     start_text = font_small.render("Press space to start", True, (255, 255, 255))
     screen.blit(start_text, (WIDTH//2 - start_text.get_width()//2, 400))
 
@@ -54,6 +60,8 @@ def create_gems(number_of_gems, walls_group):
 
 #Objects
 def reset_game():
+    global start_ticks
+    start_ticks = pygame.time.get_ticks()
     walls = pygame.sprite.Group()
     number_of_walls = 8
     
@@ -97,10 +105,17 @@ while running:
         draw_menu(screen)
     
     elif game_state == GAME:
+        seconds_passed = (pygame.time.get_ticks() - start_ticks) // 1000
+        time_left = GAME_TIME - seconds_passed
+
+        if time_left <= 0:
+            time_left = 0
+            game_state = END
         player.move(walls)
         
         collected_gems = pygame.sprite.spritecollide(player, gems, True)
         for gem in collected_gems:
+            start_ticks += 5000
             print("Gem collected!")
         
         if len(gems) == 0:
@@ -110,10 +125,19 @@ while running:
         walls.draw(screen)
         gems.draw(screen) 
         screen.blit(player.image, player.rect)
+        font_timer = pygame.font.SysFont("Nexa", 30)
+        timer_color = (255, 255, 255) if time_left > 10 else (255, 0, 0)
+        
+        timer_text = font_timer.render(f"Time: {time_left}s", True, timer_color)
+        screen.blit(timer_text, (20, 20))
 
     elif game_state == END:
         draw_end_screen(screen)
 
+    fog.fill((0, 0, 0))
+    light_rect = pygame.draw.circle(fog, (255, 255, 255), player.rect.center, 150)
+    fog.set_colorkey((255, 255, 255))
+    screen.blit(fog, (0, 0))
     pygame.display.flip()
     clock.tick(FPS)
 
